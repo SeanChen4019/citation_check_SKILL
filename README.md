@@ -1,67 +1,98 @@
 # Citation Check Skill (查引)
 
-A Claude Code skill for automated academic citation analysis.
+A Claude Code skill for automated academic citation analysis. Given a paper title, it searches Google Scholar, finds all citing papers, downloads their PDFs, extracts citation contexts, looks up author professional titles, and generates a comprehensive Excel report.
 
-## What it does
+---
 
-This skill automates the complete workflow of checking which papers cite a target paper:
+## Setup (One-Time)
 
-1. **Search** for the target paper on Google Scholar (via panda985.com)
-2. **Find** all papers that cite it
-3. **Download** PDFs of citing papers (IEEE Xplore, arXiv, open-access)
-4. **Extract** exact citation contexts from each PDF
-5. **Lookup** author professional titles (IEEE Fellow, Academy memberships, etc.)
-6. **Generate** a comprehensive Excel report with full citation details
-
-## Prerequisites
-
-- Claude Code with Playwright MCP server (`@playwright/mcp`)
-- Python 3.12+ with `pymupdf` and `openpyxl`
-- PowerShell (Windows)
-- IEEE Xplore institutional subscription (for IEEE papers)
-
-## Installation
+### 1. Install Playwright MCP Server
 
 ```bash
-# Install to Claude Code skills directory
-cp SKILL.md ~/.claude/skills/citation-check/SKILL.md
-
-# Install Python dependencies
-pip install pymupdf openpyxl
+claude mcp add playwright npx @playwright/mcp@latest
 ```
+
+Verify: `claude mcp list` should show `playwright: ... ✓ Connected`
+
+### 2. Install Python Dependencies
+
+```bash
+py -3 -m pip install pymupdf openpyxl --trusted-host pypi.org --trusted-host files.pythonhosted.org
+```
+
+### 3. Install This Skill
+
+```powershell
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\skills\citation-check"
+Copy-Item "SKILL.md" "$env:USERPROFILE\.claude\skills\citation-check\SKILL.md"
+```
+
+### 4. Prerequisites Checklist
+
+| Requirement | How to Check | How to Install |
+|-------------|-------------|----------------|
+| Claude Code CLI | `claude --version` | https://code.claude.com |
+| Playwright MCP | `claude mcp list` | `claude mcp add playwright npx @playwright/mcp@latest` |
+| Python 3.12+ | `py -3 --version` | https://python.org |
+| PyMuPDF | `py -3 -c "import fitz"` | `pip install pymupdf` |
+| openpyxl | `py -3 -c "import openpyxl"` | `pip install openpyxl` |
+| IEEE Xplore access | Browser login at ieeexplore.ieee.org | Institutional subscription |
+
+---
 
 ## Usage
 
-In Claude Code, simply say:
-- "帮我查引这篇论文：[paper title]"
-- "/citation-check"
-- "Check citations of [paper title] by [authors]"
-
-The skill will trigger automatically on phrases like "查引", "引用", "被引用", "citation search", "cited by".
-
-## Output
-
-Each paper gets a dedicated folder:
 ```
-{Author}_{ShortTitle}_查引/
-├── {Author}_{ShortTitle}_引用分析报告.xlsx    ← Excel report
-├── 引用文献PDF/                                ← Downloaded PDFs
-└── 中间文件/                                   ← Scripts and data
+帮我查引这篇论文：[paper title]，作者：[authors]
 ```
 
-The Excel report contains:
-- Complete citing paper information
-- Author professional titles (IEEE Fellow, Academy memberships)
-- Exact citation context (original text + Chinese summary)
-- Publication dates extracted from PDF metadata
-- Summary statistics
+Examples:
+```
+帮我查引这篇论文：FSOS-AMC: Few-Shot Open-Set Learning for Automatic Modulation Classification Over Multipath Fading Channels，作者：Hao Zhang
+查一下Dong Peihao这篇论文的被引情况：Differentially Private Federated Learning Based Wideband Spectrum Sensing
+```
 
-## Known Issues
+The skill auto-triggers on: `查引`, `引用`, `被引用`, `citation search`, `cited by`
 
-- **IEEE cookies expire** after ~1-2 hours; re-authentication needed
-- **Cloudflare-protected sites** (TechRxiv) require browser-based access
-- **ProQuest** papers require separate subscription
-- Some PDFs with Type 3 fonts may not extract text correctly
+---
+
+## What It Does
+
+1. **Search** → Google Scholar via panda985.com (handles CAPTCHA automatically)
+2. **Find** → All citing papers with metadata
+3. **Download** → PDFs (IEEE Xplore via cookie auth, arXiv open access, browser-based for Cloudflare sites)
+4. **Extract** → Exact citation context from each PDF (text + reference entry)
+5. **Lookup** → Author professional titles (IEEE Fellow, 中国工程院院士, etc.)
+6. **Generate** → Excel report with full details
+
+## Output Structure
+
+```
+{FirstAuthor}_{ShortTitle}_查引/
+├── {Author}_引用分析报告.xlsx               ← Excel report (2 sheets)
+├── 引用文献PDF/                              ← Download PDFs (named by paper title)
+│   ├── 01_Ma_Few-Shot_AMC_...pdf
+│   └── 02_Zhang_Federated_Learning_...pdf
+└── 中间文件/                                 ← Scripts and JSON data
+```
+
+## Key Features
+
+- **Visible browser**: Playwright opens a real Chrome window — you can see and interact with it
+- **IEEE cookie extraction**: Automatically handles institutional authentication
+- **Author title lookup**: Scans PDF biographies and web searches for IEEE Fellow, Academy memberships, etc.
+- **Citation context extraction**: Finds exact sentences where your paper is discussed
+- **Multi-source support**: IEEE Xplore, arXiv, TechRxiv, open-access repositories
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| Playwright MCP not found | Run `claude mcp add playwright npx @playwright/mcp@latest` |
+| pip SSL error | Add `--trusted-host pypi.org --trusted-host files.pythonhosted.org` |
+| IEEE Error 418 | Cookies expired — re-extract from browser |
+| Cloudflare blocks download | Use browser-based download (Playwright passes Turnstile) |
+| Python GBK encoding error | Wrap stdout with `io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')` |
 
 ## Author
 

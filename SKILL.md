@@ -9,18 +9,104 @@ description: Use when the user asks to check citations of a paper, search for ci
 
 This skill provides a complete end-to-end workflow for checking academic paper citations using Google Scholar (via panda985.com proxy) and analyzing citing papers. It automates searching for a target paper, finding all papers that cite it, downloading their PDFs, extracting citation contexts, looking up author professional titles (IEEE Fellow, Academy memberships, etc.), and generating a comprehensive Excel report.
 
-## Prerequisites
+---
 
-The workflow requires:
-- **Playwright MCP server** installed (`@playwright/mcp`) for browser automation
-- **Python 3.12+** with `pymupdf` and `openpyxl` installed
-- **PowerShell** (Windows) with network access
-- A Chrome browser window pre-opened to `https://sc.panda985.com/index.html` if possible (the user may have already logged into IEEE)
+## Setup / Installation
 
-Install Python dependencies:
+### 1. Install Playwright MCP Server
+
+Playwright MCP is a browser automation server that lets Claude Code control a Chrome browser:
+
 ```bash
-py -3 -m pip install pymupdf openpyxl --quiet --trusted-host pypi.org --trusted-host files.pythonhosted.org
+# Install to current project (recommended)
+claude mcp add playwright npx @playwright/mcp@latest
+
+# Or install globally (available for all projects)
+claude mcp add playwright -s user -- npx -y @playwright/mcp
 ```
+
+Verify installation:
+```bash
+claude mcp list
+# Should show: playwright: npx @playwright/mcp@latest - ✓ Connected
+```
+
+The MCP server provides tools prefixed with `mcp__playwright__`:
+- `browser_navigate` — navigate to a URL
+- `browser_click` — click on elements
+- `browser_type` — type text into inputs
+- `browser_press_key` — press keyboard keys
+- `browser_snapshot` — get accessibility snapshot of page
+- `browser_take_screenshot` — capture screenshot
+- `browser_run_code_unsafe` — execute arbitrary Playwright/JS code
+- `browser_tabs` — manage browser tabs
+- `browser_wait_for` — wait for text or time
+- `browser_console_messages` — get console output
+- `browser_evaluate` — evaluate JavaScript on page
+
+**Important**: The Playwright MCP uses a **visible Chrome browser window**. When you ask Claude Code to use it, you'll see the browser operate in real-time. You can interact with it yourself (login, click, type) and Claude Code will continue from there.
+
+### 2. Install Python Dependencies
+
+Requires Python 3.12+ (Windows uses `py -3` launcher):
+
+```bash
+# Install PyMuPDF for PDF text extraction
+py -3 -m pip install pymupdf --quiet --trusted-host pypi.org --trusted-host files.pythonhosted.org
+
+# Install openpyxl for Excel generation
+py -3 -m pip install openpyxl --quiet --trusted-host pypi.org --trusted-host files.pythonhosted.org
+
+# Verify
+py -3 -c "import fitz; print('PyMuPDF OK'); import openpyxl; print('openpyxl OK')"
+```
+
+> **Note for corporate networks (e.g., Chinese university networks)**: If you encounter SSL certificate errors during `pip install`, add the `--trusted-host` flags as shown above. If Python's `urllib` encounters SSL errors when downloading PDFs, use the SSL workaround: `ssl._create_default_https_context = ssl._create_unverified_context`.
+
+### 3. Install the Skill
+
+Copy the skill file to Claude Code's skills directory:
+
+```powershell
+# Create skill directory
+New-Item -ItemType Directory -Force -Path "$env:USERPROFILE\.claude\skills\citation-check"
+
+# Copy skill file
+Copy-Item "SKILL.md" "$env:USERPROFILE\.claude\skills\citation-check\SKILL.md"
+```
+
+After installation, restart Claude Code. The skill will auto-trigger on phrases like:
+- "帮我查引这篇论文"
+- "查一下引用"
+- "citation check"
+- "check who cited this paper"
+
+### 4. Prerequisites Checklist
+
+| Requirement | How to Check | How to Install |
+|-------------|-------------|----------------|
+| Claude Code CLI | `claude --version` | https://code.claude.com |
+| Playwright MCP | `claude mcp list` \| grep playwright | `claude mcp add playwright npx @playwright/mcp@latest` |
+| Python 3.12+ | `py -3 --version` | https://python.org or `winget install python` |
+| PyMuPDF | `py -3 -c "import fitz"` | `py -3 -m pip install pymupdf` |
+| openpyxl | `py -3 -c "import openpyxl"` | `py -3 -m pip install openpyxl` |
+| PowerShell | Windows default | Built into Windows |
+| IEEE Xplore access | Open https://ieeexplore.ieee.org in browser | Institutional subscription required |
+
+### 5. Quick Start
+
+Once everything is installed, start a new Claude Code session and say:
+
+```
+帮我查引这篇论文：[paper title]，作者：[authors]
+```
+
+Example:
+```
+帮我查引这篇论文：FSOS-AMC: Few-Shot Open-Set Learning for Automatic Modulation Classification Over Multipath Fading Channels，作者：Hao Zhang
+```
+
+---
 
 ## Workflow Steps
 
@@ -333,8 +419,7 @@ Create a clean folder structure for each paper:
 {Author}_{ShortTitle}_查引/
 ├── {Author}_{ShortTitle}_引用分析报告.xlsx    ← Final Excel report
 ├── 引用文献PDF/                                ← Downloaded citing paper PDFs
-│   ├── CitingPaper1_XXXXX.pdf
-│   ├── CitingPaper2_XXXXX.pdf
+│   ├── 01_FirstAuthor_Short_Title_Source.pdf
 │   └── ...
 └── 中间文件/                                   ← Scripts and intermediate data
     ├── generate_excel.py
@@ -360,6 +445,8 @@ Remove-Item "$env:TEMP\paper_*.pdf" -Force
 | Reference number not found in text | Try alternative search patterns (arXiv ID, author names, partial title) |
 | PowerShell variable conflict | `$pid` is read-only in PS 5.1; use `$paperId` or other variable name |
 | Python UnicodeEncodeError with GBK | Wrap stdout: `sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')` |
+| pip SSL certificate error | Add `--trusted-host pypi.org --trusted-host files.pythonhosted.org` |
+| Playwright MCP not responding | Run `claude mcp list` to check status; restart Claude Code if needed |
 
 ### Quick Reference: Script Templates
 
