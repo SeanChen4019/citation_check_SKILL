@@ -427,7 +427,7 @@ WebSearch → "[作者名] 中国工程院 院士"
 | 引用文献发表时间 | 发表日期 |
 | 引用文献网站地址 | 论文直接 URL |
 | 引用文献中参考文献编号 | 如 "[41]" |
-| 引用时的描述/论述 | 中文论述摘要 + 原文引用语句 + 参考文献条目 |
+| 引用时的描述/论述 | 仅英文原文：参考文献编号 + 原文引用语句 + 参考文献条目 |
 
 **7.2 Excel 格式规范**（`openpyxl`）：
 - 表头行：蓝色背景（`#2F5496`），白色粗体字
@@ -437,22 +437,23 @@ WebSearch → "[作者名] 中国工程院 院士"
 
 **7.3 双 Sheet 结构**：
 
-- **Sheet 1「引用详情」**：主数据表（含中文论述摘要、英文原文上下文、参考文献条目）
+- **Sheet 1「引用详情」**：主数据表（仅英文原文，无中文翻译）
 
-  **论述列格式示例**：
+  **论述列格式（仅原文，不含中文！）**：
   ```
-  【引用方式】
-  参考文献编号: [28]
+  [References number]: [28]
 
-  【中文论述摘要】
-  该文引用 Zhou 等的 UAV 无线供能 MEC 系统作为关键相关工作...
+  [In-text citation]:
+  An UAV enabled mobile edge computing wireless powered system was studied in [28] to maximize the achievable computation rate.
 
-  【原文引用语句】
-  "An UAV enabled mobile edge computing wireless powered system was studied in [28] to maximize the achievable computation rate..."
-
-  【参考文献条目】
+  [Reference entry]:
   [28] F. Zhou, Y. Wu, R. Q. Hu, and Y. Qian, "Computation rate maximization in UAV-enabled wireless-powered mobile-edge computing systems," IEEE J. Sel. Areas Commun., vol. 36, no. 9, pp. 1927-1941, Sep. 2018.
   ```
+  
+  **严格规则**：
+  - 论述列**只放英文原文**，不加任何中文翻译/摘要/评述
+  - In-text citation 是 PDF 提取的原文段落，保持原样
+  - Reference entry 是完整参考文献条目
 
 - **Sheet 2「汇总统计」**：
   - 目标论文信息
